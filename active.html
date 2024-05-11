@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Cases Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .dot {
+            fill: steelblue;
+        }
+
+        .dot:hover {
+            fill: orange;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+        }
+
+        .axis-label {
+            font-size: 14px;
+        }
+
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.7;
+        }
+        h1{
+            text-align:center;
+            color: green;
+            font-size: 24px;
+        }
+        hr{
+            border:1px dashed green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Active Cases Analysis</h1><hr> 
+    <div id="scatter-chart"></div>
+
+    <script>
+        // Fetch data from Flask API
+        fetch('/India_Covid_Status')
+            .then(response => response.json())
+            .then(data => {
+                // Extracting data for Active Cases analysis
+                const activeData = data.map(entry => ({
+                    state: entry['State/UTs'],
+                    activeCases: entry['Active']
+                }));
+
+                // Calculate maximum active cases
+                const maxActive = d3.max(activeData, d => d.activeCases);
+
+                // Set up SVG canvas for scatter chart
+                const svg = d3.select("#scatter-chart")
+                                .append("svg")
+                                .attr("width", 500)
+                                .attr("height", 400);
+
+                // Define scales for scatter chart
+                const xScale = d3.scaleLinear()
+                                    .domain([0, maxActive])
+                                    .range([70, 500]);
+
+                const yScale = d3.scaleLinear()
+                                    .domain([0, activeData.length])
+                                    .nice()
+                                    .range([300, 20]);
+
+                // Append x-axis
+                svg.append("g")
+                    .attr("transform", `translate(0, ${300})`)
+                    .call(d3.axisBottom(xScale));
+
+                // Append x-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("x", 300)
+                    .attr("y", 380)
+                    .style("text-anchor", "middle")
+                    .text("Active Cases");
+
+                // Append y-axis
+                svg.append("g")
+                    .attr("transform", `translate(70, 0)`)
+                    .call(d3.axisLeft(yScale));
+
+                // Append y-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -200)
+                    .attr("y", 20)
+                    .style("text-anchor", "middle")
+                    .text("States/UTs");
+
+                // Append x-axis gridlines
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", `translate(0, ${300})`)
+                    .call(d3.axisBottom(xScale)
+                            .tickSize(-300)
+                            .tickFormat("")
+                    );
+
+                // Append y-axis gridlines
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", `translate(70, 0)`)
+                    .call(d3.axisLeft(yScale)
+                            .tickSize(-430)
+                            .tickFormat("")
+                    );
+
+                // Append dots to scatter chart
+                svg.selectAll("circle")
+                    .data(activeData)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "dot")
+                    .attr("cx", d => xScale(d.activeCases))
+                    .attr("cy", (d, i) => yScale(i))
+                    .attr("r", 5)
+                    .on("mouseover", (event, d) => {
+                        d3.select(".tooltip")
+                            .style("display", "block")
+                            .html(`<strong>${d.state}</strong><br>Active Cases: ${d.activeCases}`);
+                    })
+                    .on("mousemove", (event) => {
+                        d3.select(".tooltip")
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 10) + "px");
+                    })
+                    .on("mouseout", () => {
+                        d3.select(".tooltip").style("display", "none");
+                    });
+
+                // Add tooltip
+                d3.select("#scatter-chart")
+                    .append("div")
+                    .attr("class", "tooltip");
+            });
+    </script>
+</body>
+</html>

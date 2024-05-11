@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANALYSING COVID-19 STATUS IN INDIAN STATES</title>
+    <style type="text/css">
+        h1{
+            width: 100%;
+            border: 1px solid green;
+            text-align: center;
+            color:green;
+            padding: 25px;
+            width: 50%;
+            margin: auto;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+        iframe {
+            width: 50%;
+            height: 400px;
+            border: 1px solid green;
+        }
+        
+    </style>
+</head>
+<body>
+    <h1 style="margin-top:15px;">ANALYSING COVID-19 STATUS IN INDIAN STATES</h1><br>
+    <iframe id="all" src="/all" style="width: 99%; height: 700px;"></iframe>   
+    <iframe src="/active" style="width: 35%; height: 530px;"></iframe>
+    <iframe src="/discharge" style="width: 30%; height: 530px;"></iframe>
+    <iframe src="/discharge1" style="width: 33%; height: 530px;"></iframe>    
+    <iframe id="discharged" src="/discharged" style="width: 40%; height: 500px;"></iframe>    
+    <iframe id="regional" src="/regional" style="width: 58%; height: 500px;"></iframe>
+    <br>
+    <div style="float:left; width:40%;">        
+        <iframe id="death" src="/death" style="width: 100%; height: 1100px;"></iframe>
+    </div>
+    <div style="float:right;width:58%;margin-right:25px;">
+        <iframe id="adjusted" src="/adjusted" style="width: 100%; height:550px;"></iframe>
+        <iframe id="total" src="/total" style="width: 100%; height: 545px;"></iframe>  
+    </div>   
+    <div style="clear:both;"></div>   
+    
+</body>
+</html>

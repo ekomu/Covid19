@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regional Comparison Analysis</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script> <!-- Include D3.js library -->
+    <style>
+        /* Add CSS styles for the chart container if needed */
+        #chart-container {
+            width: 800px;
+            height: 350px;
+            margin: auto;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 5px;
+            opacity: 0;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .x-axis-label,
+        .y-axis-label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .x-axis-label {
+            text-anchor: middle;
+            transform: translate(400px, 590px); /* Adjusted position */
+        }
+
+        .y-axis-label {
+            text-anchor: middle;
+            transform: rotate(-90deg) translate(-300px, 30px); /* Adjusted position */
+        }
+
+        .region-label {
+            font-size: 16px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        .bar {
+            transition: fill 0.3s ease;
+        }
+
+        .bar:hover {
+            fill: orange;
+        }
+        
+        h1{
+            text-align:center;
+            color: green;
+            font-size: 24px;
+        }
+        hr{
+            border:1px dashed green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Regional Comparison Analysis</h1><hr>
+    <div id="chart-container"></div>
+
+    <script>
+        // Sampled data per region
+        const data = [
+            { region: 'North', totalCases: 5000, activeCases: 2000, dischargedCases: 2500, deaths: 500 },
+            { region: 'South', totalCases: 7000, activeCases: 1500, dischargedCases: 5000, deaths: 500 },
+            { region: 'East', totalCases: 3000, activeCases: 1000, dischargedCases: 1800, deaths: 200 },
+            { region: 'West', totalCases: 6000, activeCases: 2500, dischargedCases: 3000, deaths: 500 }
+        ];
+
+        // Dimensions and margins
+        const margin = { top: 30, right: 50, bottom: 30, left: 10 };
+        const width = 800 - margin.left - margin.right;
+        const height = 350 - margin.top - margin.bottom;
+
+        // Create SVG element
+        const svg = d3.select("#chart-container")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Create scales
+        const xScale = d3.scaleBand()
+                        .domain(data.map(d => d.region))
+                        .range([0, width])
+                        .padding(0.2);
+
+        const yScale = d3.scaleLinear()
+                        .domain([0, d3.max(data, d => d.totalCases)])
+                        .nice()
+                        .range([height, 0]);
+
+        // Create x-axis
+        svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0, ${height})`)
+            .call(d3.axisBottom(xScale));
+
+        // Create y-axis
+        svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(yScale));
+
+        // Add x-axis label
+        svg.append("text")
+            .attr("class", "x-axis-label")
+            .attr("text-anchor", "middle")
+            .attr("transform", `translate(${width / 2}, ${height + margin.top - 10})`)
+            .text("Region");
+
+        // Add y-axis label
+        svg.append("text")
+            .attr("class", "y-axis-label")
+            .attr("text-anchor", "middle")
+            .attr("transform", `rotate(-90) translate(${-height / 2}, ${-margin.left + 20})`)
+            .text("Number of Cases");
+
+        // Add bars for total cases
+        svg.selectAll(".totalCases")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("class", "bar totalCases")
+            .attr("x", d => xScale(d.region))
+            .attr("y", d => yScale(d.totalCases))
+            .attr("width", xScale.bandwidth() / 4)
+            .attr("height", d => height - yScale(d.totalCases))
+            .attr("fill", "blue");
+
+        // Add bars for active cases
+        svg.selectAll(".activeCases")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("class", "bar activeCases")
+            .attr("x", d => xScale(d.region) + xScale.bandwidth() / 4)
+            .attr("y", d => yScale(d.activeCases))
+            .attr("width", xScale.bandwidth() / 4)
+            .attr("height", d => height - yScale(d.activeCases))
+            .attr("fill", "orange");
+
+        // Add bars for discharged cases
+        svg.selectAll(".dischargedCases")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("class", "bar dischargedCases")
+            .attr("x", d => xScale(d.region) + 2 * xScale.bandwidth() / 4)
+            .attr("y", d => yScale(d.dischargedCases))
+            .attr("width", xScale.bandwidth() / 4)
+            .attr("height", d => height - yScale(d.dischargedCases))
+            .attr("fill", "green");
+
+        // Add bars for deaths
+        svg.selectAll(".deaths")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("class", "bar deaths")
+            .attr("x", d => xScale(d.region) + 3 * xScale.bandwidth() / 4)
+            .attr("y", d => yScale(d.deaths))
+            .attr("width", xScale.bandwidth() / 4)
+            .attr("height", d => height - yScale(d.deaths))
+            .attr("fill", "red");
+
+        // Add region labels
+        svg.selectAll(".region-label")
+            .data(data)
+            .enter()
+            .append("text")
+            .attr("class", "region-label")
+            .attr("x", d => xScale(d.region) + xScale.bandwidth() / 2)
+            .attr("y", height + margin.top)
+            .attr("dy", "1.5em")
+            .attr("text-anchor", "middle")
+            .text(d => d.region);
+
+        // Tooltip
+        const tooltip = d3.select("body")
+                            .append("div")
+                            .attr("class", "tooltip");
+
+        // Add event listeners for tooltips
+        d3.selectAll(".bar")
+            .on("mouseover", function(d) {
+                const category = d3.select(this).attr("class").split(" ")[1];
+                tooltip.html(`<strong>${category}:</strong> ${d[category]}`)
+                    .style("left", `${d3.event.pageX}px`)
+                    .style("top", `${d3.event.pageY}px`)
+                    .attr("class", "tooltip visible");
+            })
+            .on("mouseout", function() {
+                tooltip.attr("class", "tooltip");
+            });
+    </script>
+</body>
+</html>

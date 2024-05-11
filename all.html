@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COVID-19 Statistics by State/UT</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .bar {
+            fill: steelblue;
+        }
+
+        .bar:hover {
+            fill: orange;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+        }
+
+        .axis-label {
+            font-size: 14px;
+        }
+
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.7;
+        }
+        
+        h1{
+            text-align:center;
+            color: green;
+            font-size: 24px;
+        }
+        hr{
+            border:1px dashed green;
+        }
+    </style>
+</head>
+<body>
+    <h1>COVID-19 Statistics by State/UT</h1><hr>
+    <div id="bar-chart"></div>
+
+    <script>
+        // Fetch data from Flask API
+        fetch('/India_Covid_Status')
+            .then(response => response.json())
+            .then(data => {
+                // Extract data for analysis by state
+                const records = data.map(entry => ({
+                    state: entry['State/UTs'],
+                    totalCases: +entry['Total Cases'],
+                    activeCases: +entry['Active'],
+                    dischargedCases: +entry['Discharged'],
+                    deaths: +entry['Deaths'],
+                    activeRatio: +entry['Active Ratio'],
+                    dischargeRatio: +entry['Discharge Ratio'],
+                    deathRatio: +entry['Death Ratio'],
+                    population: +entry['Population']
+                }));
+
+                // Set up SVG canvas for bar chart
+                const svg = d3.select("#bar-chart")
+                                .append("svg")
+                                .attr("width", 1500)
+                                .attr("height", 600);
+
+                // Define scales
+                const xScale = d3.scaleBand()
+                                    .domain(records.map(d => d.state))
+                                    .range([70, 1500])
+                                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                                    .domain([0, d3.max(records, d => d.totalCases)])
+                                    .nice()
+                                    .range([500, 20]);
+
+                // Append x-axis
+                svg.append("g")
+                    .attr("transform", `translate(0, ${500})`)
+                    .call(d3.axisBottom(xScale))
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                // Append x-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("x", 600)
+                    .attr("y", 560)
+                    .style("text-anchor", "middle")
+                    .text("States/UTs");
+
+                // Append y-axis
+                svg.append("g")
+                    .attr("transform", `translate(70, 0)`)
+                    .call(d3.axisLeft(yScale));
+
+                // Append y-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -300)
+                    .attr("y", 20)
+                    .style("text-anchor", "middle")
+                    .text("COVID-19 Statistics");
+
+                // Append bars
+                const barsGroup = svg.append("g");
+
+                const barWidth = xScale.bandwidth() / 8;
+
+                barsGroup.selectAll(".total-cases")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar total-cases")
+                    .attr("x", d => xScale(d.state))
+                    .attr("y", d => yScale(d.totalCases))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.totalCases))
+                    .attr("fill", "steelblue")
+                    .on("mouseover", (event, d) => {
+                        tooltip.style("display", "block")
+                            .html(`<strong>${d.state}</strong><br>Total Cases: ${d.totalCases}<br>Active Cases: ${d.activeCases}<br>Discharged Cases: ${d.dischargedCases}<br>Deaths: ${d.deaths}<br>Active Ratio: ${d.activeRatio}<br>Discharge Ratio: ${d.dischargeRatio}<br>Death Ratio: ${d.deathRatio}<br>Population: ${d.population}`);
+                    })
+                    .on("mousemove", (event) => {
+                        tooltip.style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 10) + "px");
+                    })
+                    .on("mouseout", () => {
+                        tooltip.style("display", "none");
+                    });
+
+                barsGroup.selectAll(".active-cases")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar active-cases")
+                    .attr("x", d => xScale(d.state) + barWidth)
+                    .attr("y", d => yScale(d.activeCases))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.activeCases))
+                    .attr("fill", "orange");
+
+                barsGroup.selectAll(".discharged-cases")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar discharged-cases")
+                    .attr("x", d => xScale(d.state) + barWidth * 2)
+                    .attr("y", d => yScale(d.dischargedCases))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.dischargedCases))
+                    .attr("fill", "green");
+
+                barsGroup.selectAll(".deaths")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar deaths")
+                    .attr("x", d => xScale(d.state) + barWidth * 3)
+                    .attr("y", d => yScale(d.deaths))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.deaths))
+                    .attr("fill", "red");
+
+                barsGroup.selectAll(".active-ratio")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar active-ratio")
+                    .attr("x", d => xScale(d.state) + barWidth * 4)
+                    .attr("y", d => yScale(d.activeRatio))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.activeRatio))
+                    .attr("fill", "purple");
+
+                barsGroup.selectAll(".discharge-ratio")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar discharge-ratio")
+                    .attr("x", d => xScale(d.state) + barWidth * 5)
+                    .attr("y", d => yScale(d.dischargeRatio))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.dischargeRatio))
+                    .attr("fill", "yellow");
+
+                barsGroup.selectAll(".death-ratio")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar death-ratio")
+                    .attr("x", d => xScale(d.state) + barWidth * 6)
+                    .attr("y", d => yScale(d.deathRatio))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.deathRatio))
+                    .attr("fill", "brown");
+
+                barsGroup.selectAll(".population")
+                    .data(records)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar population")
+                    .attr("x", d => xScale(d.state) + barWidth * 7)
+                    .attr("y", d => yScale(d.population))
+                    .attr("width", barWidth)
+                    .attr("height", d => 500 - yScale(d.population))
+                    .attr("fill", "blue");
+
+                // Add tooltip
+                const tooltip = d3.select("#bar-chart")
+                                    .append("div")
+                                    .attr("class", "tooltip");
+            });
+    </script>
+</body>
+</html>

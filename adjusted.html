@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Population Adjusted Analysis</title>
+    <!-- Include D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        
+        h1{
+            text-align:center;
+            color: green;
+            font-size: 24px;
+        }
+        hr{
+            border:1px dashed green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Population Adjusted Analysis</h1><hr>
+    <div id="chart-container"></div>
+
+    <script>
+        // Fetch data from the Flask route
+        fetch('/India_Covid_Status')
+            .then(response => response.json())
+            .then(data => {
+                // Convert population to per capital
+                data.forEach(d => {
+                    d['Total Cases (per capita)'] = d['Total Cases'] / d['Population'] * 1000000; // Adjust per million
+                    d['Deaths (per capita)'] = d['Deaths'] / d['Population'] * 1000000; // Adjust per million
+                });
+
+                // Set up the dimensions for the scatter plot
+                const margin = { top: 20, right: 20, bottom: 20, left: 60 };
+                const width = 850 - margin.left - margin.right;
+                const height = 450 - margin.top - margin.bottom;
+
+                // Append SVG to the chart container
+                const svg = d3.select("#chart-container")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+                // Define scales for x and y axes
+                const xScale = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d['Population'])])
+                    .range([0, width]);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(data, d => d['Total Cases (per capita)'])])
+                    .range([height, 0]);
+
+                // Create x and y axes
+                const xAxis = d3.axisBottom(xScale);
+                const yAxis = d3.axisLeft(yScale);
+
+                // Append x and y axes to the SVG
+                svg.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", `translate(0, ${height})`)
+                    .call(xAxis)
+                    .append("text")
+                    .attr("class", "label")
+                    .attr("x", width)
+                    .attr("y", -6)
+                    .style("text-anchor", "end")
+                    .text("Population");
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis)
+                    .append("text")
+                    .attr("class", "label")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                    .text("Total Cases (per million)");
+
+                // Create circles for the scatter plot
+                svg.selectAll("circle")
+                    .data(data)
+                    .enter().append("circle")
+                    .attr("cx", d => xScale(d['Population']))
+                    .attr("cy", d => yScale(d['Total Cases (per capita)']))
+                    .attr("r", 5)
+                    .style("fill", "steelblue");
+
+                // Add tooltips
+                svg.selectAll("circle")
+                    .on("mouseover", function (event, d) {
+                        d3.select(this).style("fill", "orange");
+                        const tooltip = d3.select("#tooltip");
+                        tooltip.style("left", event.pageX + "px");
+                        tooltip.style("top", event.pageY + "px");
+                        tooltip.style("display", "inline-block");
+                        tooltip.html(`
+                            <strong>${d['State/UTs']}</strong><br>
+                            Population: ${d['Population']}<br>
+                            Total Cases (per million): ${d['Total Cases (per capita)'].toFixed(2)}<br>
+                            Deaths (per million): ${d['Deaths (per capita)'].toFixed(2)}
+                        `);
+                    })
+                    .on("mouseout", function () {
+                        d3.select(this).style("fill", "steelblue");
+                        d3.select("#tooltip").style("display", "none");
+                    });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    </script>
+
+    <!-- Tooltip -->
+    <div id="tooltip" style="position: absolute; display: none; background-color: white; padding: 10px; border: 1px solid black;"></div>
+</body>
+</html>
